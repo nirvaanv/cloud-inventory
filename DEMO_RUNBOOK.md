@@ -26,9 +26,10 @@ The VM has no external IP. You open the application on your laptop through an IA
 1. In the Google Cloud console, show the VM name, machine type, zone, and absence of an external IP.
 2. Explain that IAP checks Google identity and IAM authorization before forwarding the connection.
 3. Show the Flask inventory page through the local tunnel.
-4. Add a sample product and quantity, then show it in the list.
-5. Open the health endpoint to show the application's basic health check.
-6. Explain that the app is container-ready, but this private VM guide runs the Python application directly on the VM.
+4. Open the product catalog and demonstrate search or category filtering.
+5. Record a stock-in or stock-out transaction and show the updated quantity and activity entry.
+6. Open the low-stock view to show threshold-based alerts, then visit the health endpoint.
+7. Explain that the image supports local container use, while this private VM guide runs the Python application directly on the VM.
 
 ## Screenshot evidence
 
@@ -37,9 +38,11 @@ Capture screenshots from the actual deployed VM and save them under [`docs/scree
 | Filename | Capture |
 | --- | --- |
 | `01-compute-engine-private-vm.png` | Compute Engine VM list with machine type, zone, and no external IP visible. |
-| `02-inventory-dashboard.png` | Inventory page open through the IAP tunnel. |
-| `03-inventory-product-added.png` | Inventory page after adding a clearly identified sample product. |
-| `04-application-health.png` | `/health` response in the browser. |
+| `02-inventory-dashboard.png` | Dashboard open through the IAP tunnel. |
+| `03-product-catalog.png` | Product catalog with a sample search or category filter applied. |
+| `04-stock-transaction.png` | Stock movement after a sample stock-in or stock-out transaction. |
+| `05-low-stock-alerts.png` | Low-stock view with threshold alerts. |
+| `06-application-health.png` | `/health` response in the browser. |
 
 Before committing screenshots, remove browser tabs or account details that are not needed for the evidence. Only use sample inventory data. Add the images to Git and reference them in the README if you want them displayed on the repository front page.
 

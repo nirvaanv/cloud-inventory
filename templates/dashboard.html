@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Cloud Inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-3 mb-4 border-bottom">
+    <div>
+        <h1 class="h3 fw-bold text-dark mb-1">Executive Inventory Dashboard</h1>
+        <p class="text-muted small mb-0">Inventory levels, stock valuation in INR (₹), and recent stock movements.</p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
+        <a href="{{ url_for('add_product') }}" class="btn btn-primary btn-sm d-flex align-items-center shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add Product
+        </a>
+        <a href="{{ url_for('stock') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+            <i class="bi bi-arrow-left-right me-1"></i> Stock In / Out
+        </a>
+    </div>
+</div>
+
+<!-- KPI Metric Summary Cards -->
+<div class="row g-3 mb-4">
+    <!-- Total Products -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card metric-card card-primary border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="metric-icon bg-primary-subtle text-primary me-3">
+                    <i class="bi bi-box-seam-fill fs-3"></i>
+                </div>
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold fs-8 tracking-wider">Total Products</span>
+                    <h3 class="fw-bold mb-0 mt-1">{{ stats.total_products }}</h3>
+                    <small class="text-secondary fs-8">Active inventory catalog</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Stock Units -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card metric-card card-success border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="metric-icon bg-success-subtle text-success me-3">
+                    <i class="bi bi-stack fs-3"></i>
+                </div>
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold fs-8 tracking-wider">Available Units</span>
+                    <h3 class="fw-bold mb-0 mt-1">{{ stats.total_stock }}</h3>
+                    <small class="text-secondary fs-8">Total units across items</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card metric-card card-danger border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="metric-icon {% if stats.low_stock_count > 0 %}bg-danger-subtle text-danger{% else %}bg-secondary-subtle text-secondary{% endif %} me-3">
+                    <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                </div>
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold fs-8 tracking-wider">Low Stock Alerts</span>
+                    <h3 class="fw-bold mb-0 mt-1 {% if stats.low_stock_count > 0 %}text-danger{% endif %}">{{ stats.low_stock_count }}</h3>
+                    {% if stats.low_stock_count > 0 %}
+                        <a href="{{ url_for('low_stock') }}" class="text-danger fs-8 fw-semibold text-decoration-none">Review alert items &rarr;</a>
+                    {% else %}
+                        <small class="text-success fs-8">Inventory optimal</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Valuation in INR (₹) -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card metric-card card-info border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="metric-icon bg-info-subtle text-info me-3">
+                    <i class="bi bi-currency-rupee fs-3"></i>
+                </div>
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold fs-8 tracking-wider">Total Valuation</span>
+                    <h3 class="fw-bold mb-0 mt-1 currency-inr">₹{{ "{:,.2f}".format(stats.total_value) }}</h3>
+                    <small class="text-secondary fs-8">Across {{ stats.total_categories }} categories</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Dashboard Content: Tables and Summaries -->
+<div class="row g-4">
+    <!-- Recently Added Products -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                <h5 class="card-title fw-bold mb-0 text-dark">
+                    <i class="bi bi-clock-history me-2 text-primary"></i> Recently Added Products
+                </h5>
+                <a href="{{ url_for('products') }}" class="btn btn-sm btn-link text-decoration-none">View All &rarr;</a>
+            </div>
+            <div class="card-body p-0">
+                {% if stats.recent_products %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-3">Product</th>
+                                <th>Category</th>
+                                <th>Unit Price</th>
+                                <th>Stock</th>
+                                <th class="text-end pe-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in stats.recent_products %}
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="fw-semibold text-dark">{{ product.name }}</div>
+                                    <div class="text-muted fs-8">SKU #{{ product.id }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary">{{ product.category }}</span>
+                                </td>
+                                <td class="fw-semibold text-dark currency-inr">₹{{ "%.2f"|format(product.price) }}</td>
+                                <td>
+                                    {% if product.quantity == 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                    {% elif product.quantity <= product.min_stock %}
+                                        <span class="badge bg-warning text-dark">{{ product.quantity }} (Low)</span>
+                                    {% else %}
+                                        <span class="badge bg-success-subtle text-success fw-bold">{{ product.quantity }} units</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                    <p class="mb-2">No products registered in the database yet.</p>
+                    <a href="{{ url_for('add_product') }}" class="btn btn-sm btn-primary">Add First Product</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdown & Recent Activity -->
+    <div class="col-lg-5">
+        <!-- Category Inventory Breakdown in INR -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="card-title fw-bold mb-0 text-dark">
+                    <i class="bi bi-pie-chart-fill me-2 text-info"></i> Category Breakdown (INR)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if stats.category_summary %}
+                <ul class="list-group list-group-flush">
+                    {% for cat in stats.category_summary %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <div class="fw-semibold text-dark">{{ cat.category }}</div>
+                            <small class="text-muted fs-8">{{ cat.count }} items &bull; ₹{{ "{:,.2f}".format(cat.cat_value) }}</small>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-bold">
+                            {{ cat.total_qty }} units
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="p-3 text-muted text-center mb-0">No categories found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Stock Transactions -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                <h5 class="card-title fw-bold mb-0 text-dark">
+                    <i class="bi bi-activity me-2 text-warning"></i> Stock Movements
+                </h5>
+                <a href="{{ url_for('stock') }}" class="btn btn-sm btn-link text-decoration-none">Full Log &rarr;</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_transactions %}
+                <div class="list-group list-group-flush">
+                    {% for txn in recent_transactions %}
+                    <div class="list-group-item py-2 px-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold text-dark">{{ txn.product_name }}</span>
+                                <div class="text-muted fs-8">{{ txn.created_at }}</div>
+                            </div>
+                            <div class="text-end">
+                                {% if txn.change_type == 'IN' %}
+                                    <span class="badge bg-success"><i class="bi bi-arrow-down-left"></i> +{{ txn.quantity }}</span>
+                                {% elif txn.change_type == 'OUT' %}
+                                    <span class="badge bg-danger"><i class="bi bi-arrow-up-right"></i> -{{ txn.quantity }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ txn.change_type }} {{ txn.quantity }}</span>
+                                {% endif %}
+                                <div class="fs-8 text-secondary mt-1">{{ txn.previous_stock }} &rarr; {{ txn.new_stock }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="p-3 text-muted text-center mb-0">No recent transactions recorded.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

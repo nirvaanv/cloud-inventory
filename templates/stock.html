@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Operations | Cloud Inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-3 mb-3 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold text-dark mb-1">Stock Management</h1>
+        <p class="text-muted small mb-0">Record incoming inventory, dispatch stock out, and audit transaction logs.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('products') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-box-seam me-1"></i> View All Products
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Stock Transaction Form -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="card-title fw-bold mb-0 text-dark">
+                    <i class="bi bi-arrow-left-right text-primary me-2"></i> Record Stock Movement
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('stock') }}" id="stockForm">
+                    <!-- Product Selection -->
+                    <div class="mb-3">
+                        <label for="product_id" class="form-label fw-semibold">Target Product <span class="text-danger">*</span></label>
+                        <select class="form-select" id="product_id" name="product_id" required>
+                            <option value="" disabled selected>-- Select a Product --</option>
+                            {% for p in products %}
+                            <option value="{{ p.id }}" data-stock="{{ p.quantity }}">
+                                {{ p.name }} (Current: {{ p.quantity }} units &bull; ₹{{ "%.2f"|format(p.price) }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div id="currentStockFeedback" class="form-text text-muted">Select an item to view current stock level.</div>
+                    </div>
+
+                    <!-- Movement Type -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold d-block">Transaction Type <span class="text-danger">*</span></label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="change_type" id="typeIn" value="IN" checked>
+                            <label class="btn btn-outline-success py-2 fw-semibold" for="typeIn">
+                                <i class="bi bi-box-arrow-in-down me-1"></i> Stock IN (Receive)
+                            </label>
+
+                            <input type="radio" class="btn-check" name="change_type" id="typeOut" value="OUT">
+                            <label class="btn btn-outline-danger py-2 fw-semibold" for="typeOut">
+                                <i class="bi bi-box-arrow-up me-1"></i> Stock OUT (Dispatch)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Quantity Amount -->
+                    <div class="mb-3">
+                        <label for="amount" class="form-label fw-semibold">Quantity Amount <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-calculator"></i></span>
+                            <input type="number" min="1" step="1" class="form-control" id="amount" name="amount" placeholder="e.g. 10" required>
+                        </div>
+                        <div class="form-text">Must be a positive integer &ge; 1. Negative inventory is strictly prevented.</div>
+                    </div>
+
+                    <!-- Notes / Reason -->
+                    <div class="mb-4">
+                        <label for="notes" class="form-label fw-semibold">Reference Notes / Reason</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-card-text"></i></span>
+                            <input type="text" class="form-control" id="notes" name="notes" placeholder="e.g. Supplier PO #4092 or Order #1042">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitStockBtn" class="btn btn-success w-100 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-check-circle me-1"></i> Confirm Stock In
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stock Help / Rules Card -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="card-title fw-bold mb-0 text-dark">
+                    <i class="bi bi-shield-check text-success me-2"></i> Stock Validation & Rules
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-success mb-2"><i class="bi bi-box-arrow-in-down me-1"></i> Stock In Flow</h6>
+                            <p class="small text-muted mb-0">Increments inventory count when new supplies or returns arrive. Creates an audit record in <code>stock_history</code>.</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-danger mb-2"><i class="bi bi-box-arrow-up me-1"></i> Stock Out Flow</h6>
+                            <p class="small text-muted mb-0">Dispatches inventory for sales or orders. Built-in check prevents negative quantities &ndash; transaction rolls back if stock is insufficient.</p>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-3 bg-primary-subtle text-primary rounded-3">
+                            <div class="d-flex">
+                                <i class="bi bi-database-check fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Persistent SQLite Storage</h6>
+                                    <p class="small mb-0">Stock changes are recorded in SQLite transactions. In the private GCP VM demo, the database file is stored on the VM boot disk.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock History Audit Trail -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+        <h5 class="card-title fw-bold mb-0 text-dark">
+            <i class="bi bi-journal-text me-2 text-primary"></i> Stock Audit Log (Last 50 Events)
+        </h5>
+        <span class="badge bg-secondary-subtle text-secondary">{{ history|length }} recorded movements</span>
+    </div>
+    <div class="card-body p-0">
+        {% if history %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light fs-8 text-uppercase">
+                    <tr>
+                        <th class="ps-3" style="width: 70px;">Log #</th>
+                        <th>Product</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Stock Transition</th>
+                        <th>Notes / Reason</th>
+                        <th class="text-end pe-3">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in history %}
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">#{{ h.id }}</td>
+                        <td>
+                            <span class="fw-semibold text-dark">{{ h.product_name }}</span>
+                            <span class="badge bg-light text-secondary ms-1 fs-8">{{ h.product_category }}</span>
+                        </td>
+                        <td>
+                            {% if h.change_type == 'IN' %}
+                                <span class="badge bg-success px-2 py-1"><i class="bi bi-arrow-down-left me-1"></i> Stock IN</span>
+                            {% elif h.change_type == 'OUT' %}
+                                <span class="badge bg-danger px-2 py-1"><i class="bi bi-arrow-up-right me-1"></i> Stock OUT</span>
+                            {% elif h.change_type == 'INITIAL' %}
+                                <span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-star me-1"></i> Initial</span>
+                            {% else %}
+                                <span class="badge bg-secondary px-2 py-1">{{ h.change_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">
+                            {% if h.change_type == 'IN' %}
+                                <span class="text-success">+{{ h.quantity }}</span>
+                            {% elif h.change_type == 'OUT' %}
+                                <span class="text-danger">-{{ h.quantity }}</span>
+                            {% else %}
+                                <span class="text-dark">{{ h.quantity }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                {{ h.previous_stock }} &rarr; {{ h.new_stock }} units
+                            </span>
+                        </td>
+                        <td class="text-muted small">{{ h.notes or '-' }}</td>
+                        <td class="text-end pe-3 text-muted fs-8">{{ h.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="p-4 text-center text-muted mb-0">No stock history entries recorded yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeIn = document.getElementById('typeIn');
+    const typeOut = document.getElementById('typeOut');
+    const submitBtn = document.getElementById('submitStockBtn');
+    const productSelect = document.getElementById('product_id');
+    const feedback = document.getElementById('currentStockFeedback');
+
+    function updateUI() {
+        if (typeIn.checked) {
+            submitBtn.className = 'btn btn-success w-100 py-2 fw-bold shadow-sm';
+            submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Confirm Stock In';
+        } else {
+            submitBtn.className = 'btn btn-danger w-100 py-2 fw-bold shadow-sm';
+            submitBtn.innerHTML = '<i class="bi bi-box-arrow-up me-1"></i> Confirm Stock Out';
+        }
+    }
+
+    typeIn.addEventListener('change', updateUI);
+    typeOut.addEventListener('change', updateUI);
+
+    productSelect.addEventListener('change', function() {
+        const selected = productSelect.options[productSelect.selectedIndex];
+        const stock = selected.getAttribute('data-stock');
+        if (stock !== null) {
+            feedback.innerHTML = `Available in inventory: <strong>${stock} units</strong>.`;
+        }
+    });
+});
+</script>
+{% endblock %}
+

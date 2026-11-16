@@ -1,6 +1,9 @@
 .git
+.gitignore
 .venv
 __pycache__
 *.py[cod]
-instance/
 .env
+instance
+wheelhouse
+docs/screenshots

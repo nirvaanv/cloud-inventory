@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cloud Inventory | Stock management{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-body-tertiary">
+
+    <!-- Top Navigation Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm px-3 main-navbar">
+        <div class="container-fluid px-1">
+            <div class="d-flex align-items-center">
+                <!-- Open / Close Sidebar Toggle Button -->
+                <button class="btn btn-outline-light btn-sm me-3 sidebar-toggle-btn" id="sidebarToggle" type="button" aria-label="Toggle navigation menu" title="Toggle Navigation Menu">
+                    <i class="bi bi-layout-sidebar-inset fs-5"></i>
+                </button>
+                
+                <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                    <span class="brand-icon me-2"><i class="bi bi-box-seam-fill"></i></span>
+                    <span class="brand-text">Cloud Inventory</span>
+                    <span class="badge bg-primary-gradient ms-2 fs-8 fw-semibold">Inventory management</span>
+                </a>
+            </div>
+            
+            <div class="ms-auto d-flex align-items-center gap-2">
+                <a href="{{ url_for('health') }}" target="_blank" class="badge rounded-pill status-pill text-decoration-none px-3 py-2 d-none d-sm-inline-flex align-items-center shadow-xs">
+                    <span class="status-indicator-dot me-2"></span> Health check
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- App Wrapper with Sliding Sidebar -->
+    <div class="app-layout" id="appLayout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar bg-white border-end" id="sidebar">
+            <div class="sidebar-header d-flex justify-content-between align-items-center px-3 py-3 border-bottom d-lg-none">
+                <span class="fw-bold text-dark"><i class="bi bi-boxes me-2 text-primary"></i> Cloud Inventory</span>
+                <button type="button" class="btn-close" id="sidebarCloseBtn" aria-label="Close"></button>
+            </div>
+
+            <div class="sidebar-content py-3">
+                <div class="px-3 mb-2 sidebar-label">
+                    <small class="text-uppercase text-muted fw-bold tracking-wider fs-8">Management</small>
+                </div>
+                <ul class="nav nav-pills flex-column px-2 gap-1 sidebar-nav">
+                    <li class="nav-item">
+                        <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" title="Dashboard">
+                            <i class="bi bi-grid-1x2-fill nav-icon"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('products') }}" class="nav-link {% if request.endpoint in ['products', 'edit_product'] %}active{% endif %}" title="Product Catalog">
+                            <i class="bi bi-box-seam nav-icon"></i>
+                            <span class="nav-text">Product Inventory</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('add_product') }}" class="nav-link {% if request.endpoint == 'add_product' %}active{% endif %}" title="Add Product">
+                            <i class="bi bi-plus-circle nav-icon"></i>
+                            <span class="nav-text">Add Product</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('stock') }}" class="nav-link {% if request.endpoint == 'stock' %}active{% endif %}" title="Stock Operations">
+                            <i class="bi bi-arrow-left-right nav-icon"></i>
+                            <span class="nav-text">Stock In / Out</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('low_stock') }}" class="nav-link d-flex justify-content-between align-items-center {% if request.endpoint == 'low_stock' %}active{% endif %}" title="Low Stock Alerts">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle nav-icon"></i>
+                                <span class="nav-text">Low Stock</span>
+                            </div>
+                            {% if global_low_stock_count > 0 %}
+                            <span class="badge rounded-pill bg-danger ms-auto alert-counter">{{ global_low_stock_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+
+                <hr class="my-4 mx-3 text-secondary-light">
+
+                <div class="px-3 mb-2 sidebar-label">
+                    <small class="text-uppercase text-muted fw-bold tracking-wider fs-8">Deployment</small>
+                </div>
+                <div class="px-3 sidebar-info-cards">
+                    <div class="card devops-pill-card border-0 p-2 mb-2">
+                        <div class="d-flex align-items-center small">
+                            <div class="devops-icon-wrap bg-primary-subtle text-primary me-2">
+                                <i class="bi bi-cloud-check"></i>
+                            </div>
+                            <div class="nav-text">
+                                <span class="fw-semibold d-block text-dark lh-sm">Compute Engine</span>
+                                <span class="fs-8 text-muted">Private VM via IAP</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card devops-pill-card border-0 p-2 mb-2">
+                        <div class="d-flex align-items-center small">
+                            <div class="devops-icon-wrap bg-warning-subtle text-warning me-2">
+                                <i class="bi bi-gear-wide-connected"></i>
+                            </div>
+                            <div class="nav-text">
+                                <span class="fw-semibold d-block text-dark lh-sm">IAP access</span>
+                                <span class="fs-8 text-muted">Identity-gated tunnel</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card devops-pill-card border-0 p-2 mb-2">
+                        <div class="d-flex align-items-center small">
+                            <div class="devops-icon-wrap bg-info-subtle text-info me-2">
+                                <i class="bi bi-box"></i>
+                            </div>
+                            <div class="nav-text">
+                                <span class="fw-semibold d-block text-dark lh-sm">Flask + SQLite</span>
+                                <span class="fs-8 text-muted">Persistent inventory data</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Sidebar Backdrop for Mobile overlay -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <!-- Main Workspace Content Area -->
+        <main class="main-content px-3 px-md-4 py-4" id="mainContent">
+            <!-- Flash Alert Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages mb-4">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm d-flex align-items-center rounded-3 border-0" role="alert">
+                                {% if category == 'success' %}
+                                    <i class="bi bi-check-circle-fill me-2 fs-5 text-success"></i>
+                                {% elif category == 'danger' %}
+                                    <i class="bi bi-exclamation-octagon-fill me-2 fs-5 text-danger"></i>
+                                {% elif category == 'warning' %}
+                                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning"></i>
+                                {% else %}
+                                    <i class="bi bi-info-circle-fill me-2 fs-5 text-info"></i>
+                                {% endif %}
+                                <div class="fw-medium">{{ message }}</div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+
+            <!-- Footer -->
+            <footer class="mt-5 pt-4 text-muted border-top d-flex flex-column flex-md-row justify-content-between align-items-center fs-8">
+                <div>
+                    <strong>Cloud Inventory</strong>. Built with Python, Flask, SQLite, and Gunicorn.
+                </div>
+                <div class="mt-2 mt-md-0 d-flex gap-2">
+                    <span class="badge bg-secondary-subtle text-secondary">Currency: INR (₹)</span>
+                    <span class="badge bg-success-subtle text-success">GCP deployment guide</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom Application JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

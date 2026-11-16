@@ -82,7 +82,7 @@ gcloud compute ssh cloud-inventory-vm \
 ```
 
 ```bash
-gcloud compute scp --recurse app.py requirements.txt templates wheelhouse \
+gcloud compute scp --recurse app.py database.py requirements.txt templates static wheelhouse \
   cloud-inventory-vm:~/cloud-inventory/ \
   --zone=us-central1-a \
   --tunnel-through-iap

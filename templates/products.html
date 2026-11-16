@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Product Inventory | Cloud Inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-3 mb-3 border-bottom">
+    <div>
+        <h1 class="h3 fw-bold text-dark mb-1">Product Inventory</h1>
+        <p class="text-muted small mb-0">Search, filter, categorize, and manage items in your SQLite database in real time.</p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('add_product') }}" class="btn btn-primary d-flex align-items-center shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add New Product
+        </a>
+    </div>
+</div>
+
+<!-- Search, Filter & Sort Toolbar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="{{ url_for('products') }}" id="filterForm" class="row g-2 align-items-center">
+            <!-- Search Text -->
+            <div class="col-lg-4 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="productSearchInput" name="q" class="form-control border-start-0 ps-0" placeholder="Type to search name, category, or ID..." value="{{ search_query }}" autocomplete="off">
+                    {% if search_query %}
+                    <a href="{{ url_for('products') }}" class="input-group-text bg-light text-muted text-decoration-none" title="Clear search">&times;</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-lg-3 col-md-6">
+                <select name="category" id="categorySelect" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Sort By -->
+            <div class="col-lg-2 col-md-4">
+                <select name="sort" id="sortSelect" class="form-select">
+                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
+                    <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Sort by Price (₹)</option>
+                    <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Sort by Stock</option>
+                    <option value="id" {% if sort_by == 'id' %}selected{% endif %}>Sort by ID</option>
+                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Sort by Date</option>
+                </select>
+            </div>
+
+            <!-- Sort Order -->
+            <div class="col-lg-2 col-md-4">
+                <select name="order" id="orderSelect" class="form-select">
+                    <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Ascending (&uarr;)</option>
+                    <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Descending (&darr;)</option>
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="col-lg-1 col-md-4 d-flex gap-1">
+                <button type="submit" class="btn btn-primary w-100 d-flex justify-content-center align-items-center" title="Apply Filter">
+                    <i class="bi bi-funnel-fill me-1"></i> <span class="d-md-none d-lg-inline">Filter</span>
+                </button>
+                {% if search_query or category_filter or sort_by != 'name' or sort_order != 'asc' %}
+                <a href="{{ url_for('products') }}" class="btn btn-outline-danger" title="Clear All Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Products Table Card -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+        <h5 class="card-title fw-bold mb-0 text-dark">
+            <i class="bi bi-boxes me-2 text-primary"></i> Product Catalog
+            <span class="badge bg-primary-subtle text-primary fs-8 ms-2" id="itemCountBadge">{{ products|length }} item(s)</span>
+        </h5>
+        <div class="d-none d-md-block text-muted fs-8">
+            <i class="bi bi-lightning-charge text-warning"></i> Real-time search & sorting active
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="productsTable">
+                <thead>
+                    <tr>
+                        <th class="ps-3" style="width: 70px;">ID</th>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Price (₹)</th>
+                        <th>Stock Available</th>
+                        <th>Min. Threshold</th>
+                        <th>Added Date</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                    {% for p in products %}
+                    <tr class="product-row" 
+                        data-id="{{ p.id }}" 
+                        data-name="{{ p.name|lower }}" 
+                        data-category="{{ p.category }}" 
+                        data-price="{{ p.price }}" 
+                        data-quantity="{{ p.quantity }}" 
+                        data-date="{{ p.created_at }}">
+                        <td class="ps-3 fw-bold text-muted">#{{ p.id }}</td>
+                        <td>
+                            <span class="fw-semibold text-dark product-name">{{ p.name }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary product-category">{{ p.category }}</span>
+                        </td>
+                        <td class="fw-semibold text-dark currency-inr">₹{{ "%.2f"|format(p.price) }}</td>
+                        <td>
+                            {% if p.quantity == 0 %}
+                                <span class="badge bg-danger px-2 py-1"><i class="bi bi-x-circle me-1"></i> Out of Stock</span>
+                            {% elif p.quantity <= p.min_stock %}
+                                <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-exclamation-triangle me-1"></i> {{ p.quantity }} (Low)</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success px-2 py-1 fw-bold">{{ p.quantity }} units</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ p.min_stock }} units</td>
+                        <td class="text-muted fs-8">{{ p.created_at }}</td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ url_for('stock') }}" class="btn btn-outline-success" title="Stock In/Out">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                </a>
+                                <a href="{{ url_for('edit_product', product_id=p.id) }}" class="btn btn-outline-primary" title="Edit Product">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ p.id }}" title="Delete Product">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Delete Confirmation Modal -->
+                            <div class="modal fade" id="deleteModal{{ p.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ p.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered text-start">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title" id="deleteModalLabel{{ p.id }}">
+                                                <i class="bi bi-exclamation-octagon me-1"></i> Confirm Product Deletion
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Are you sure you want to delete <strong>{{ p.name }}</strong> (ID: #{{ p.id }})?</p>
+                                            <p class="text-danger small mb-0"><i class="bi bi-info-circle me-1"></i> This will also remove associated stock history transactions from SQLite.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                            <form method="POST" action="{{ url_for('delete_product', product_id=p.id) }}" class="d-inline">
+                                                <button type="submit" class="btn btn-danger btn-sm">Yes, Delete Permanently</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Dynamic Client-Side Empty State Alert (shown when live filter yields 0 matches) -->
+        <div id="noMatchMessage" class="p-5 text-center text-muted" style="display: none;">
+            <i class="bi bi-search fs-1 d-block mb-3 text-secondary"></i>
+            <h5>No matching products found</h5>
+            <p class="mb-3 text-secondary">No items match your active search and category filters.</p>
+            <button type="button" id="resetLiveFiltersBtn" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Search & Filters
+            </button>
+        </div>
+
+        {% if not products %}
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-search fs-1 d-block mb-3 text-secondary"></i>
+            <h5>No matching products found</h5>
+            <p class="mb-3">Try adjusting your search criteria or add a new product.</p>
+            <a href="{{ url_for('add_product') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add New Product
+            </a>
+            <a href="{{ url_for('products') }}" class="btn btn-outline-secondary btn-sm ms-2">Reset Filters</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('productSearchInput');
+    const categorySelect = document.getElementById('categorySelect');
+    const sortSelect = document.getElementById('sortSelect');
+    const orderSelect = document.getElementById('orderSelect');
+    const tableBody = document.getElementById('productsTableBody');
+    const rows = Array.from(document.querySelectorAll('.product-row'));
+    const itemCountBadge = document.getElementById('itemCountBadge');
+    const noMatchMessage = document.getElementById('noMatchMessage');
+    const resetBtn = document.getElementById('resetLiveFiltersBtn');
+    const filterForm = document.getElementById('filterForm');
+
+    function applyLiveFilters() {
+        const query = searchInput.value.toLowerCase().trim();
+        const selectedCategory = categorySelect.value.trim();
+        const sortBy = sortSelect.value;
+        const sortOrder = orderSelect.value;
+
+        let visibleCount = 0;
+
+        // 1. Filter rows
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name') || '';
+            const category = row.getAttribute('data-category') || '';
+            const id = row.getAttribute('data-id') || '';
+
+            const matchesQuery = !query || name.includes(query) || category.toLowerCase().includes(query) || id.includes(query.replace('#', ''));
+            const matchesCategory = !selectedCategory || category === selectedCategory;
+
+            if (matchesQuery && matchesCategory) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // 2. Sort rows
+        const sortedRows = rows.slice().sort((a, b) => {
+            let valA, valB;
+
+            if (sortBy === 'price') {
+                valA = parseFloat(a.getAttribute('data-price')) || 0;
+                valB = parseFloat(b.getAttribute('data-price')) || 0;
+            } else if (sortBy === 'quantity') {
+                valA = parseInt(a.getAttribute('data-quantity'), 10) || 0;
+                valB = parseInt(b.getAttribute('data-quantity'), 10) || 0;
+            } else if (sortBy === 'id') {
+                valA = parseInt(a.getAttribute('data-id'), 10) || 0;
+                valB = parseInt(b.getAttribute('data-id'), 10) || 0;
+            } else if (sortBy === 'created_at') {
+                valA = a.getAttribute('data-date') || '';
+                valB = b.getAttribute('data-date') || '';
+            } else { // name
+                valA = a.getAttribute('data-name') || '';
+                valB = b.getAttribute('data-name') || '';
+            }
+
+            if (valA < valB) return sortOrder === 'desc' ? 1 : -1;
+            if (valA > valB) return sortOrder === 'desc' ? -1 : 1;
+            return 0;
+        });
+
+        // Re-append in sorted order
+        sortedRows.forEach(row => tableBody.appendChild(row));
+
+        // 3. Update counter and empty message
+        if (itemCountBadge) {
+            itemCountBadge.textContent = `${visibleCount} item(s)`;
+        }
+
+        if (noMatchMessage) {
+            noMatchMessage.style.display = (visibleCount === 0 && rows.length > 0) ? 'block' : 'none';
+        }
+    }
+
+    // Attach instant real-time event listeners
+    if (searchInput) {
+        searchInput.addEventListener('input', applyLiveFilters);
+        searchInput.addEventListener('keyup', applyLiveFilters);
+    }
+
+    if (categorySelect) {
+        categorySelect.addEventListener('change', applyLiveFilters);
+    }
+
+    if (sortSelect) {
+        sortSelect.addEventListener('change', applyLiveFilters);
+    }
+
+    if (orderSelect) {
+        orderSelect.addEventListener('change', applyLiveFilters);
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (categorySelect) categorySelect.value = '';
+            if (sortSelect) sortSelect.value = 'name';
+            if (orderSelect) orderSelect.value = 'asc';
+            applyLiveFilters();
+        });
+    }
+
+    // Run initial filter on load if params present
+    applyLiveFilters();
+});
+</script>
+{% endblock %}

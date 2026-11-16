@@ -5,10 +5,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DATABASE_PATH=/data/inventory.db
 
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-COPY app.py .
+COPY app.py database.py ./
 COPY templates ./templates
+COPY static ./static
+
+RUN groupadd --system app \
+    && useradd --system --gid app --home-dir /app --no-create-home app \
+    && mkdir -p /data \
+    && chown app:app /data
+USER app
 
 EXPOSE 5000
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "app:app"]

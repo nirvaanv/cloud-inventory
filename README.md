@@ -4,9 +4,9 @@ A small Flask inventory app for a cloud computing project. It demonstrates an HT
 
 ## Project overview
 
-Cloud Inventory is a compact demonstration application for tracking product names and quantities. It uses Flask for HTTP routes and server-rendered pages, SQLite for persistence, and Gunicorn as the production WSGI server. The `/health` endpoint performs a database connectivity check.
+Cloud Inventory is a Flask inventory application with a dashboard, product catalog, stock operations, and low-stock alerts. It uses SQLite for persistence and Gunicorn as the WSGI server. The `/health` endpoint verifies database connectivity.
 
-The application supports adding products and viewing the inventory. It is intentionally scoped as a small cloud deployment example rather than a production inventory system.
+The application supports creating, editing, searching, filtering, and deleting products; recording stock-in and stock-out transactions; viewing recent activity; and monitoring configurable low-stock thresholds. Example inventory is seeded into an empty database at first launch.
 
 ## Target architecture
 
