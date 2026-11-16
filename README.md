@@ -6,6 +6,8 @@ A small Flask inventory app for a cloud computing project. It demonstrates an HT
 
 For a private Compute Engine demo with no external IP, follow [GCP_DEPLOYMENT.md](GCP_DEPLOYMENT.md). It copies the app and dependencies to an e2-micro VM and provides access through an IAP tunnel to your own laptop. The VM is not publicly reachable, and the guide includes cleanup commands. Compute Engine still requires billing; Free Tier eligibility depends on region and account usage, so a $0 bill is not guaranteed.
 
+For the college Tool Explorer rubric, see the beginner-friendly [presentation and viva guide](PRESENTATION_GUIDE.md).
+
 ## Online preview
 
 The [interactive sample inventory](https://nirvaanv.github.io/cloud-inventory/) is hosted with GitHub Pages and stays available when your computer is offline. It uses sample data saved in each visitor's browser; it is not connected to the Flask app or its SQLite database. To publish or republish it, open **Settings → Pages**, choose **Deploy from a branch**, select `main` and `/docs`, then save. GitHub publishes `docs/index.html` at the preview link above.
