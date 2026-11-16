@@ -1,6 +1,6 @@
 # Cloud Inventory
 
-A small Flask inventory app for a cloud computing project. It demonstrates an HTTP application, a health endpoint, a container image, and SQLite data stored at a configurable path.
+A Flask inventory management application with a private Google Cloud deployment path. It uses SQLite for persistence and provides product catalog management, stock movement tracking, low-stock alerts, and an application health endpoint.
 
 ## Project overview
 
@@ -20,32 +20,39 @@ flowchart LR
   App --> DB[(SQLite on persistent disk)]
 ```
 
-## GCP deployment
+## Private GCP deployment
 
-For a private Compute Engine demo with no external IP, follow [GCP_DEPLOYMENT.md](GCP_DEPLOYMENT.md). It copies the app and dependencies to an e2-micro VM and provides access through an IAP tunnel to your own laptop. The VM is not publicly reachable, and the guide includes cleanup commands. Compute Engine still requires billing; Free Tier eligibility depends on region and account usage, so a $0 bill is not guaranteed.
+Follow [GCP_DEPLOYMENT.md](GCP_DEPLOYMENT.md) to create an e2-micro Compute Engine VM with no external IP, transfer the app and dependencies over IAP, and open it from your laptop through a private tunnel. The guide includes start, stop, and delete commands. Compute Engine requires billing; Free Tier eligibility depends on the region and billing-account usage, so a $0 bill is not guaranteed.
 
 For the live demo sequence and screenshot evidence checklist, see the [demo runbook](DEMO_RUNBOOK.md).
 
-The screenshot folder contains capture instructions only until an actual GCP VM is deployed; it does not include fabricated cloud screenshots.
+## Live VM screenshots
+
+These screenshots show the Flask app running on the private Compute Engine VM and viewed from the laptop through IAP. The app itself has no public IP or public website URL.
+
+![Cloud Inventory dashboard served through the private IAP tunnel](docs/screenshots/01-inventory-dashboard.png)
+
+[Product catalog](docs/screenshots/02-product-catalog.png) · [Stock transaction](docs/screenshots/03-stock-transaction.png) · [Low-stock alerts](docs/screenshots/04-low-stock-alerts.png) · [Health endpoint](docs/screenshots/05-application-health.png)
 
 ## Online preview
 
 The [interactive sample inventory](https://nirvaanv.github.io/cloud-inventory/) is hosted with GitHub Pages and stays available when your computer is offline. It uses sample data saved in each visitor's browser; it is not connected to the Flask app or its SQLite database. To publish or republish it, open **Settings → Pages**, choose **Deploy from a branch**, select `main` and `/docs`, then save. GitHub publishes `docs/index.html` at the preview link above.
 
-For the real Flask application, follow the local or Docker instructions below. The static preview is intended as a permanent project showcase, not a live backend deployment.
+The Pages site is an interactive sample that saves changes in each visitor's browser. The Flask backend and SQLite database run on the private GCP VM described in [GCP_DEPLOYMENT.md](GCP_DEPLOYMENT.md). Local and Docker commands below are development options.
 
-## Run locally
+## Local development
 
-Requires Python 3.12+.
+Requires Python 3.9 or newer.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
+pytest -v
 python app.py
 ```
 
-Open http://127.0.0.1:5000. Data is stored in `instance/inventory.db` by default. Set `DATABASE_PATH` to change the location.
+Open http://127.0.0.1:5000. Data is stored in `instance/inventory.db` by default. The test suite covers Flask routes, product validation, stock operations, database behavior, and the health endpoint.
 
 ## Run with Docker
 
