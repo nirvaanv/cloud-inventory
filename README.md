@@ -2,11 +2,31 @@
 
 A small Flask inventory app for a cloud computing project. It demonstrates an HTTP application, a health endpoint, a container image, and SQLite data stored at a configurable path.
 
+## Project overview
+
+Cloud Inventory is a compact demonstration application for tracking product names and quantities. It uses Flask for HTTP routes and server-rendered pages, SQLite for persistence, and Gunicorn as the production WSGI server. The `/health` endpoint performs a database connectivity check.
+
+The application supports adding products and viewing the inventory. It is intentionally scoped as a small cloud deployment example rather than a production inventory system.
+
+## Target architecture
+
+The private GCP deployment guide describes this architecture; no GCP VM is created automatically by this repository.
+
+```mermaid
+flowchart LR
+  Browser[Demo browser<br/>127.0.0.1:5000] -->|IAP SSH port forward| IAP[Identity-Aware Proxy]
+  IAP --> VM[Compute Engine VM<br/>internal IP only]
+  VM --> App[Flask + Gunicorn]
+  App --> DB[(SQLite on persistent disk)]
+```
+
 ## GCP deployment
 
 For a private Compute Engine demo with no external IP, follow [GCP_DEPLOYMENT.md](GCP_DEPLOYMENT.md). It copies the app and dependencies to an e2-micro VM and provides access through an IAP tunnel to your own laptop. The VM is not publicly reachable, and the guide includes cleanup commands. Compute Engine still requires billing; Free Tier eligibility depends on region and account usage, so a $0 bill is not guaranteed.
 
-For the college Tool Explorer rubric, see the beginner-friendly [presentation and viva guide](PRESENTATION_GUIDE.md).
+For the live demo sequence and screenshot evidence checklist, see the [demo runbook](DEMO_RUNBOOK.md).
+
+The screenshot folder contains capture instructions only until an actual GCP VM is deployed; it does not include fabricated cloud screenshots.
 
 ## Online preview
 
