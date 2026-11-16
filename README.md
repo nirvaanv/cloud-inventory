@@ -2,6 +2,12 @@
 
 A small Flask inventory app for a cloud computing project. It demonstrates an HTTP application, a health endpoint, a container image, and SQLite data stored at a configurable path.
 
+## Online preview
+
+The [interactive sample inventory](https://nirvaanv.github.io/cloud-inventory/) is hosted with GitHub Pages and works while your computer is offline. It uses sample data saved in each visitor's browser; it is not connected to the Flask app or its SQLite database. To publish or republish it, open **Settings → Pages**, choose **Deploy from a branch**, select `main` and `/docs`, then save. GitHub publishes `docs/index.html` at the preview link above.
+
+For the real Flask application, follow the local or Docker instructions below. The static preview is intended as a permanent project showcase, not a live backend deployment.
+
 ## Run locally
 
 Requires Python 3.12+.
