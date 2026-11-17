@@ -1,4 +1,4 @@
-# Cloud Inventory
+# Cloud Inventory: Private Inventory Management on Google Cloud
 
 A Flask inventory management application with a private Google Cloud deployment path. It uses SQLite for persistence and provides product catalog management, stock movement tracking, low-stock alerts, and an application health endpoint.
 
